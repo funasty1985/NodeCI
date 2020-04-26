@@ -15,12 +15,27 @@ client.get = util.promisify(client.get);
 //  store the original exec method of Query class of mongoose
 const exec = mongoose.Query.prototype.exec;
 
+mongoose.Query.prototype.cache = function(){
+    // we created an new attribute userCache to Query class 
+    // to act as a flag to check if the overwritting process of Query.exec is needed 
+    // ie. Blog.find({ _user: req.user.id }) -> no overwritting 
+    // while Blog.find({ _user: req.user.id }).cache() will do so. 
+    this.useCache =true;
+
+    // making .cache chainable to aonther methods of Query class
+    // eg. Blog.find({ _user: req.user.id }).cache().limit(10)
+    return this;
+}
+
 // no arrow function here since it messes arround 'this' inside the func
 // if we use class way to define function , this is always referred to 
 // an object instantiated from the Query class 
 // ie. it is a query which is going to be executed 
 // query example : Blog.find({ _user: req.user.id })
 mongoose.Query.prototype.exec = async function (){
+    if (!this.useCache){
+        return exec.apply(this, arguments)
+    }
 
     // this.getQuery() returns the profile object of the Query 
     // we don't want to directly modify it which may lead to 

@@ -10,17 +10,23 @@ const client = redis.createClient(redisUrl);
 // e.g client.get('key',(r)=>{console.log(r)}) 
 // promisify will overwrite client.get and make it return a promise object
 // so that the new client.get is easier to read and write. 
-client.get = util.promisify(client.get);
+client.hget = util.promisify(client.hget);
 
 //  store the original exec method of Query class of mongoose
 const exec = mongoose.Query.prototype.exec;
 
-mongoose.Query.prototype.cache = function(){
+mongoose.Query.prototype.cache = function(options= {}){
     // we created an new attribute userCache to Query class 
     // to act as a flag to check if the overwritting process of Query.exec is needed 
     // ie. Blog.find({ _user: req.user.id }) -> no overwritting 
     // while Blog.find({ _user: req.user.id }).cache() will do so. 
     this.useCache =true;
+
+    //  Top level cache key
+    //  we created an new attribute hashKey to Query class
+    //  to store the top level cache key ie req.user.id , 
+    //  here we are using the nested Hashes key approach 
+    this.hashKey = JSON.stringify(options.key || '');
 
     // making .cache chainable to aonther methods of Query class
     // eg. Blog.find({ _user: req.user.id }).cache().limit(10)
@@ -41,6 +47,7 @@ mongoose.Query.prototype.exec = async function (){
     // we don't want to directly modify it which may lead to 
     // unexpected query result
 
+    // the nested (second level)cache key 
     // query + collect form is consistant and unique key for redis 
     // const key = {...this.getQuery(), {colloection: this.mongooseCollection.name}}
     const key = JSON.stringify(Object.assign({}, this.getQuery(), {
@@ -48,7 +55,7 @@ mongoose.Query.prototype.exec = async function (){
     }));
 
     // See if we have a value for 'key' in redis
-    const cacheValue = await client.get(key);
+    const cacheValue = await client.hget(this.hashKey, key);
 
     // If we do, return that 
     if (cacheValue){
@@ -82,7 +89,13 @@ mongoose.Query.prototype.exec = async function (){
     // Document instance have extra method which is absent in JSON 
     // Note that we can only store string (JSON is string) but not js object nor mongodb documnet to redis.
     // We have to convert result (document object) to JSON before saving to redis 
-    client.set(key, JSON.stringify(result));
+    client.hset(this.hashKey,key , JSON.stringify(result), 'EX', 10);
 
     return result;
 }
+
+module.exports = {
+    clearHash(hasKey) {
+        client.del(JSON.stringify(hasKey))
+    }
+};

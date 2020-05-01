@@ -1,4 +1,6 @@
 const puppeteer = require('puppeteer')
+const sessionFactory = require('./factories/sessionFactory')
+const userFactory = require('./factories/userFactory')
 
 let browser, page;
 
@@ -12,7 +14,7 @@ beforeEach(async()=>{
 });
 
 afterEach(async() => {
-    // await browser.close();
+    await browser.close();
 });
 
 test('the header has the corredt text', async () => {
@@ -33,35 +35,16 @@ test('clicking login starts oauth flow', async ()=> {
 
 // we set cookie to the chromium instance to fake our server we are login
 // as an user we picked 
-test.only('When signed in, shows logout button', async ()=> {
-    // mongodb id but not google id
-    const id = '5e901b51f5400d311db1fa8c';   
-
-    const Buffer = require('safe-buffer').Buffer;
-    const sessionObject = {
-        passport: {
-            user: id
-        }
-    };
-
-    // mimicing the session string in cookie
-    const sessionString = Buffer.from(
-        JSON.stringify(sessionObject)
-    ).toString('base64');
-
-    const Keyrip = require('keygrip');
-    const keys = require('../config/keys');
-    const keygrip = new Keyrip([keys.cookieKey]);
-
-    // mimicing the seesion.sig(signature) in cookie
-    const sig = keygrip.sign('session=' + sessionString);
+test('When signed in, shows logout button', async ()=> {  
+    const user = await userFactory();
+    const { session, sig } = sessionFactory(user);
      
     // when setting a cookie , we have to consider the domain , 
     // in this case, pupperteer navigate the Page object 
     // to localhost:3000 (see beforeEach) before we set the cookie
     // so we don't have to consider the domain
     await page.setCookie({ name: 'session.sig', value: sig });
-    await page.setCookie({ name: 'session', value: sessionString });
+    await page.setCookie({ name: 'session', value: session });
 
     // we have to refresh the page to update the header 
     // so that it will then contain the new cookie

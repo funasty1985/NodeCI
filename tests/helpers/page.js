@@ -8,7 +8,8 @@ const userFactory = require('../factories/userFactory')
 // there is no easy way to make pupperteer to use CustomPage class instead of Page class. 
 
 // So we set a static method on CustomPage to do so where 
-// a page instance is created when CustomPage.build() is called.
+// a page instance is created when CustomPage.build() is called.  
+// {We can use CustomPage.build() to instantiate a CustomPage object instead of new CustomPage(page) in the test suite}
 // The page instance is passed to the constructor , 
 // later when instance of customPage is created (says customPage) and customPage.login() is called 
 // pupperteer can use the page instance we created in the static method to set cookies. 
@@ -39,8 +40,6 @@ class CustomPage {
         });
     }
 
-    // see the instaniation of CustomPage at static build
-    // we save a referrence of the page instance 
     constructor(page) {
         this.page = page;
     }
@@ -58,12 +57,16 @@ class CustomPage {
     
         // we have to refresh the page to update the header 
         // so that it will then contain the new cookie
-        await this.page.goto('localhost:3000');
+        await this.page.goto('localhost:3000/blogs');
     
         // waiting for the logout button to appear. 
         // without this, the $val line below will run before the button is loaded 
         // which casuse a test fail. 
         await this.page.waitFor('a[href="/auth/logout"]');
+    }
+
+    async getContentsOf(selector){
+        return this.page.$eval(selector, el => el.innerHTML);
     }
 }
 

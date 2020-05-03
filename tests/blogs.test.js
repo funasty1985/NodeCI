@@ -68,39 +68,27 @@ describe('When loggin in' , async () => {
     });
 });
 
-describe('User is not logged in', async () => {
-    test('User cannot create blog posts', async() => {
-
-        const result = await page.evaluate(
-            () => {
-                return fetch('/api/blogs', {
-                    method: 'POST',
-                    credentials: 'same-origin', // get cookie from the app. If the app is logged in , the cookie will have corresponding session and session.sig and vice verse .
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ title: 'My Title', content: 'My Content' })
-                }).then(res => res.json());  
+describe.only('User is not logged in', async () => {
+    const actions = [
+        {
+            method: 'get',
+            path: '/api/blogs'
+        },
+        {
+            method: 'post',
+            path: '/api/blogs',
+            data: {
+                title: 'T',
+                content: 'C'
             }
-        );
+        }
+    ];
 
-        expect(result).toEqual({ error: 'You must log in!' });
-    });
+    test('Blog related actions are prohitbited',  async () => {
+       const results = await page.execRequests(actions);
 
-    test('User cannot get a list of blog posts', async() => {
-
-        const result = await page.evaluate(
-            () => {
-                return fetch('/api/blogs', {
-                    method: 'GET',
-                    credentials: 'same-origin', // get cookie from the app. If the app is logged in , the cookie will have corresponding session and session.sig and vice verse .
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                }).then(res => res.json());  
-            }
-        );
-
-        expect(result).toEqual({ error: 'You must log in!' });
+       for (let result of results){
+           expect(result).toEqual({ error: 'You must log in!' });
+       }
     });
 });

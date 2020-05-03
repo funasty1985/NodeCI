@@ -68,6 +68,45 @@ class CustomPage {
     async getContentsOf(selector){
         return this.page.$eval(selector, el => el.innerHTML);
     }
+
+    get(path) {
+        // evalute() will turn the func param it receives and turns it to a string before sending to chromium for execution,
+        // therefore we cannot pass the path param directly from get() to fetch() which will be turned into string later.
+        // Since page.evaluate(pageFunction, ...arg), we pass path param as the second arguement to evaluate()
+        return this.page.evaluate(
+            (_path) => {
+                return fetch(_path , {
+                    method: 'GET',
+                    credentials: 'same-origin', // get cookie from the app. If the app is logged in , the cookie will have corresponding session and session.sig and vice verse .
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    
+                }).then(res => res.json());  
+        }, path);
+    };
+
+    post(path, data){
+        return this.page.evaluate(
+            (_path, _data) => {
+                return fetch(_path, {
+                    method: 'POST',
+                    credentials: 'same-origin', // get cookie from the app. If the app is logged in , the cookie will have corresponding session and session.sig and vice verse .
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(_data)
+                }).then(res => res.json());  
+        }, path, data);
+    };
+
+    execRequests(actions) {
+        return Promise.all(actions.map(({ method, path, data }) => {
+            // either post() or get()
+           return this[method](path, data);
+           })
+        );
+    };
 }
 
 module.exports = CustomPage;

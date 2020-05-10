@@ -26,7 +26,8 @@ const userFactory = require('../factories/userFactory')
 class CustomPage {
     static async build() {
         const browser = await puppeteer.launch({
-            headless: false
+            headless: true,
+            args: ['--no-sandbox']  // decrese the time for the test to run in the CI server
         });
 
         const page = await browser.newPage();
@@ -57,7 +58,7 @@ class CustomPage {
     
         // we have to refresh the page to update the header 
         // so that it will then contain the new cookie
-        await this.page.goto('localhost:3000/blogs');
+        await this.page.goto('http://localhost:3000/blogs');
     
         // waiting for the logout button to appear. 
         // without this, the $val line below will run before the button is loaded 

@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 const redis = require('redis');
 const util = require('util');
+const keys = require('../config/keys');
 
-const redisUrl = 'redis://172.17.0.2';
-const client = redis.createClient(redisUrl);
+const client = redis.createClient(keys.redisUrl);
 
 // client.get from node-redis doesn't return a promise object, 
 // but instead accepting a callback to handle its returned result

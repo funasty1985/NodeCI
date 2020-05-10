@@ -68,7 +68,7 @@ describe('When loggin in' , async () => {
     });
 });
 
-describe.only('User is not logged in', async () => {
+describe('User is not logged in', async () => {
     const actions = [
         {
             method: 'get',
